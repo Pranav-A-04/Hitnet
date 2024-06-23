@@ -20,8 +20,8 @@ class PredictModel(pl.LightningModule):
 
 @torch.no_grad()
 def predict(model, lp, rp, width, op):
-    left = cv2.imread(str(lp), cv2.IMREAD_COLOR)
-    right = cv2.imread(str(rp), cv2.IMREAD_COLOR)
+    left = cv2.imread(str(lp), cv2.IMREAD_GRAYSCALE)
+    right = cv2.imread(str(rp), cv2.IMREAD_GRAYSCALE)
     if width is not None and width != left.shape[1]:
         height = int(round(width / left.shape[1] * left.shape[0]))
         left = cv2.resize(
@@ -34,15 +34,15 @@ def predict(model, lp, rp, width, op):
             (width, height),
             interpolation=cv2.INTER_CUBIC,
         )
-    left = np2torch(left, bgr=True).cuda().unsqueeze(0)
-    right = np2torch(right, bgr=True).cuda().unsqueeze(0)
+    left = np2torch(left).cuda().unsqueeze(0)
+    right = np2torch(right).cuda().unsqueeze(0)
     pred = model(left, right)
 
     disp = pred["disp"]
     disp = torch.clip(disp / 192 * 255, 0, 255).long()
     disp = apply_colormap(disp)
 
-    output = [left, disp]
+    output = [disp]
     if "slant" in pred:
         dxy = dxy_colormap(pred["slant"][-1][1])
         output.append(dxy)
